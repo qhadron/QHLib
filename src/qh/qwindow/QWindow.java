@@ -284,4 +284,28 @@ public class QWindow implements KeyListener, MouseListener, MouseMotionListener 
 		return title;
 	}
 	
+	public void update() {
+		canvas.update();
+	}
+	
+	public int getFps() {
+		return canvas.getFps();
+	}
+	public void setFps(int fps) {
+		canvas.setFps(fps);;
+	}
+	public boolean isDoubleBuffered() {
+		return canvas.isDoubleBuffered();
+	}
+	public void setDoubleBuffered(boolean isDoubleBuffered) {
+		canvas.setDoubleBuffered(isDoubleBuffered);
+	}
+	
+	public Color getBackgroundColor() {
+		return canvas.getBackgroundColor();
+	}
+	
+	public void setBackgroundColor(Color val) {
+		canvas.setBackgroundColor(val);
+	}
 }
