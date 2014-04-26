@@ -2,21 +2,35 @@ package qh.qwindow;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.awt.event.MouseWheelListener;
+import java.awt.image.BufferedImage;
 
 import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.Timer;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 
-public class QWindow implements KeyListener, MouseListener, MouseMotionListener {
+public class QWindow extends JPanel implements KeyListener, MouseListener, MouseMotionListener,ActionListener, ComponentListener {
 	
+	/**
+	 * 	Generated serial version UID
+	 */
+	private static final long serialVersionUID = 6588150114177176857L;
 	String title;
 	private int maxx, maxy;
 	public volatile boolean[] keysDown;
@@ -25,13 +39,25 @@ public class QWindow implements KeyListener, MouseListener, MouseMotionListener 
 	public volatile int mouseX,mouseY;
 	
 	private JFrame mainFrame;
-	private QCanvas canvas;
 	
 	private KeyListener keyListener = this;
 	private MouseListener mouseListener = this;
 	private MouseMotionListener mouseMotionListener = this;
 	
+
+	Timer timer;
+	private int fps = 30;
+	private int delay;
+	
+	private Graphics2D g2d;
+	private Image image;
+	private Color curColor = Color.black;
+	private Color backgroundColor = Color.white;
+	private boolean doubleBuffered;
+	private volatile boolean needUpdate;
+	
 	public QWindow() {
+		super(false);
 		title = "New Window";
 		maxx = 640;
 		maxy = 480;
@@ -39,6 +65,7 @@ public class QWindow implements KeyListener, MouseListener, MouseMotionListener 
 	}
 	
 	public QWindow(String title) {
+		super(false);
 		this.title = title;
 		maxx = 640;
 		maxy = 480;
@@ -46,12 +73,14 @@ public class QWindow implements KeyListener, MouseListener, MouseMotionListener 
 	}
 	
 	public QWindow(int WIDTH, int HEIGHT) {
+		super(false);
 		maxx = WIDTH;
 		maxy = HEIGHT;
 		init();
 	}
 	
 	public QWindow(String title, int width, int height) {
+		super(false);
 		this.title = title;
 		this.maxx = width;
 		this.maxy = height;
@@ -59,6 +88,7 @@ public class QWindow implements KeyListener, MouseListener, MouseMotionListener 
 	}
 	
 	public QWindow(String title, KeyListener kl, MouseListener ml, MouseMotionListener mml) {
+		super(false);
 		this.title = title;
 		maxx = 640;
 		maxy = 480;
@@ -69,6 +99,7 @@ public class QWindow implements KeyListener, MouseListener, MouseMotionListener 
 	}
 	
 	public QWindow(String title, int width, int height, KeyListener kl, MouseListener ml, MouseMotionListener mml) {
+		super(false);
 		this.title = title;
 		maxx = width;
 		maxy = height;
@@ -97,70 +128,145 @@ public class QWindow implements KeyListener, MouseListener, MouseMotionListener 
 		mainFrame.setResizable(true);
 		mainFrame.setAutoRequestFocus(true);
 		mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
+		
 
 		//initialize the canvas
-		canvas = new QCanvas(maxx,maxy,this);
-		canvas.addKeyListener(keyListener);
-		canvas.addMouseListener(mouseListener);
-		canvas.addMouseMotionListener(mouseMotionListener);
-		mainFrame.add(canvas,BorderLayout.CENTER);
+		setFocusable(true);
+		setDoubleBuffered(false);
+		addComponentListener(this);
+		delay = (int)((double)1000/fps);
+		timer = new Timer(delay,this);
+		doubleBuffered = false;
+		setBackground(Color.white);
+		this.addKeyListener(keyListener);
+		this.addMouseListener(mouseListener);
+		this.addMouseMotionListener(mouseMotionListener);
+		mainFrame.add(this,BorderLayout.CENTER);
 		mainFrame.pack();
-		canvas.setSize(maxx, maxy);
-		mainFrame.setSize(canvas.getPreferredSize());
+		setSize(maxx, maxy);
+		mainFrame.setSize(getPreferredSize());
 		
 		mainFrame.setLocationRelativeTo(null);
 		mainFrame.setVisible(true);
-		canvas.start();
+		repaint();
+		start();
 	}
 	
+	public void start() {
+		timer.start();
+		if (image == null) {
+			image = createVolatileImage(getWidth(), getHeight());
+			g2d = (Graphics2D) image.getGraphics();
+			g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+		}
+		clear();
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		this.repaint();
+	}
+	
+	@Override
+	public Dimension getPreferredSize() {
+        return new Dimension(maxx,maxy);
+    }
+
+	@Override
+	public void paint(Graphics g) {
+		Rectangle r = g.getClipBounds();
+		if (!doubleBuffered||needUpdate) {
+			g.drawImage(image, r.x, r.y, r.x+r.width, r.y + r.height, r.x, r.y, r.x + r.width, r.y + r.height, Color.white, null);
+			needUpdate = false;
+		}
+	}
+
+	public void clear() {
+		g2d.setColor(backgroundColor);
+		g2d.fillRect(0, 0, getWidth(), getHeight());
+		g2d.setColor(curColor);
+	}
+	
+	public void update() {
+		needUpdate = true;
+	}
+
 	public void drawLine(int x1, int y1, int  x2,int y2) {
-		canvas.drawLine(x1,y1,x2,y2);
+		g2d.drawLine(x1,y1,x2,y2);
 	}
 	
-	public void drawRect(int x1,int y1, int x2, int y2) {
-		canvas.drawRect(x1, y1, x2-x1, y2-y1);
+	public void drawRect(int x,int y, int width, int height) {
+		g2d.drawRect(x, y, width, height);
+	}
+	
+	public void drawRect2(int x1,int y1, int x2, int y2) {
+		g2d.drawRect(x1, y1, Math.abs(x2-x1), Math.abs(y2-y1));
 	}
 	
 	public void drawOval(int x, int y, int width, int height) {
-		canvas.drawOval(x, y, width, height);
+		g2d.drawOval(x, y, width, height);
 	}
 	
 	public void drawPolygon(int[] xpoints, int[] ypoints, int npoints) {
-		canvas.drawPolygon(xpoints, ypoints, npoints);
+		g2d.drawPolygon(xpoints, ypoints, npoints);
 	}
-	public void fillRect(int x1,int y1, int x2, int y2) {
-		canvas.fillRect(x1, y1, x2-x1, y2-y1);
-	}
-	
-	public void drawRect2(int x1,int y1, int width, int height) {
-		canvas.drawRect(x1, y1, width, height);
+	public void fillRect(int x,int y, int width, int height) {
+		g2d.fillRect(x, y, width, height);
 	}
 	
-	public void fillRect2(int x1,int y1, int width, int height) {
-		canvas.fillRect(x1, y1, width, height);
+	public void fillRect2(int x1,int y1, int x2, int y2) {
+		g2d.fillRect(x1, y1, Math.abs(x2-x1), Math.abs(y2-y1));
 	}
 	
 	public void fillOval(int x, int y, int width, int height) {
-		canvas.fillOval(x, y, width, height);
+		g2d.fillOval(x, y, width, height);
 	}
 	
 	public void fillPolygon(int[] xpoints, int[] ypoints, int npoints) {
-		canvas.fillPolygon(xpoints, ypoints, npoints);
+		g2d.fillPolygon(xpoints, ypoints, npoints);
 	}
 	
 	public void drawPolyline(int[] xpoints, int[] ypoints, int npoints) {
-		canvas.drawPolyline(xpoints, ypoints, npoints);
+		g2d.drawPolyline(xpoints, ypoints, npoints);
 	}
 	
+	public int getFps() {
+		return fps;
+	}
+	public void setFps(int fps) {
+		this.fps = fps;
+	}
 	public void setColor(Color c) {
-		canvas.setColor(c);
+		curColor = c;
+		g2d.setColor(c);
+	}
+
+	public boolean isDoubleBuffered() {
+		return doubleBuffered;
+	}
+	public void setDoubleBuffered(boolean isDoubleBuffered) {
+		this.doubleBuffered = isDoubleBuffered;
+	}
+
+	public Color getBackgroundColor() {
+		return backgroundColor;
+	}
+
+	public void setBackgroundColor(Color backgroundColor) {
+		this.backgroundColor = backgroundColor;
 	}
 	
-	public void clear() {
-		canvas.clear();
-	}
 	
+	public void setTitle(String newTitle) {
+		title = newTitle;
+		mainFrame.setTitle(title);
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
 	@Override
 	public void keyPressed(KeyEvent e) {
 		keysDown[e.getKeyCode()] = true;
@@ -205,7 +311,7 @@ public class QWindow implements KeyListener, MouseListener, MouseMotionListener 
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		
+		mouseButton = e.getButton();
 	}
 	
 	@Override
@@ -222,90 +328,40 @@ public class QWindow implements KeyListener, MouseListener, MouseMotionListener 
 	}
 
 	
-	public int getWidth() {
-		return canvas.getWidth();
-	}
-	
-	public int getHeight() {
-		return canvas.getHeight();
+	@Override
+	public void componentResized(ComponentEvent e) {
+		BufferedImage temp;
+		try {
+			 temp = new BufferedImage(maxx, maxy, BufferedImage.TYPE_4BYTE_ABGR);
+		} catch (IllegalArgumentException exp) {
+			temp = new BufferedImage(maxx+1,maxy+1,BufferedImage.TYPE_4BYTE_ABGR);
+		}
+		temp.createGraphics().drawImage(image,0,0,null);
+		maxx = getWidth();
+		maxy = getHeight();
+		image = createVolatileImage((maxx==0)?1:maxx, (maxy==0)?1:maxy);
+		if (image!=null) {
+			g2d = (Graphics2D) image.getGraphics();
+			g2d.setBackground(Color.white);
+			g2d.clearRect(0, 0, maxx, maxy);
+			g2d.drawImage(temp, 0, 0, null);
+			g2d.setColor(curColor);
+		}
 	}
 
+	@Override
+	public void componentMoved(ComponentEvent e) {
+		
+	}
 
-	public void addKeyListener(KeyListener kl) {
-		canvas.removeKeyListener(this.keyListener);
-		canvas.addKeyListener(kl);
+	@Override
+	public void componentShown(ComponentEvent e) {
+		repaint();
+	}
+
+	@Override
+	public void componentHidden(ComponentEvent e) {
+		
 	}
 	
-	public void addMouseListener(MouseListener ml) {
-		canvas.removeMouseListener(this.mouseListener);
-		canvas.addMouseListener(ml);
-	}
-	
-	public void addMouseMotionListener(MouseMotionListener mml) {
-		canvas.removeMouseMotionListener(this.mouseMotionListener);
-		canvas.addMouseMotionListener(mml);
-	}
-	
-	public void addMouseWheelListener (MouseWheelListener mwl) {
-		canvas.addMouseWheelListener(mwl);
-	}
-	
-	public void addComponentListener (ComponentListener cl) {
-		canvas.removeComponentListener(canvas);
-		canvas.addComponentListener(cl);
-	}
-	
-	public void removeComponentListener (ComponentListener cl) {
-		canvas.removeComponentListener(cl);
-	}
-	
-	public void removeKeyListener(KeyListener kl) {
-		canvas.removeKeyListener(kl);
-	}
-	
-	public void removeMouseListener(MouseListener ml) {
-		canvas.removeMouseListener(ml);
-	}
-	
-	public void removeMouseMotionListener(MouseMotionListener mml) {
-		canvas.removeMouseMotionListener(mml);
-	}
-	
-	public void removeMouseWheelListener(MouseWheelListener mwl) {
-		canvas.removeMouseWheelListener(mwl);
-	}
-	
-	public void setTitle(String newTitle) {
-		title = newTitle;
-		mainFrame.setTitle(title);
-	}
-	
-	public String getTitle() {
-		return title;
-	}
-	
-	public void update() {
-		canvas.update();
-	}
-	
-	public int getFps() {
-		return canvas.getFps();
-	}
-	public void setFps(int fps) {
-		canvas.setFps(fps);;
-	}
-	public boolean isDoubleBuffered() {
-		return canvas.isDoubleBuffered();
-	}
-	public void setDoubleBuffered(boolean isDoubleBuffered) {
-		canvas.setDoubleBuffered(isDoubleBuffered);
-	}
-	
-	public Color getBackgroundColor() {
-		return canvas.getBackgroundColor();
-	}
-	
-	public void setBackgroundColor(Color val) {
-		canvas.setBackgroundColor(val);
-	}
 }
