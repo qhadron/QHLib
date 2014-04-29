@@ -134,7 +134,7 @@ public class QWindow extends JPanel implements KeyListener, MouseListener, Mouse
 		setFocusable(true);
 		setDoubleBuffered(false);
 		addComponentListener(this);
-		delay = (int)((double)1000/fps);
+		delay = (int)(1000.0/fps);
 		timer = new Timer(delay,this);
 		doubleBuffered = false;
 		setBackground(Color.white);
@@ -192,37 +192,41 @@ public class QWindow extends JPanel implements KeyListener, MouseListener, Mouse
 		needUpdate = true;
 	}
 
-	public void drawLine(int x1, int y1, int  x2,int y2) {
-		g2d.drawLine(x1,y1,x2,y2);
+	public void drawLine(double x1, double y1, double  x2,double y2) {
+		g2d.drawLine((int)x1,(int)y1,(int)x2,(int)y2);
 	}
 	
-	public void drawRect(int x,int y, int width, int height) {
-		g2d.drawRect(x, y, width, height);
+	public void drawRect(double x,double y, double width, double height) {
+		g2d.drawRect((int)x, (int)y, (int)width, (int)height);
 	}
 	
-	public void drawRect2(int x1,int y1, int x2, int y2) {
-		g2d.drawRect(x1, y1, Math.abs(x2-x1), Math.abs(y2-y1));
+	public void drawRect2(double x1,double y1, double x2, double y2) {
+		g2d.drawRect((int)x1, (int)y1, (int)Math.abs(x2-x1), (int)Math.abs(y2-y1));
 	}
 	
-	public void drawOval(int x, int y, int width, int height) {
-		g2d.drawOval(x, y, width, height);
+	public void drawOval(double x, double y, double width, double height) {
+		g2d.drawOval((int)x, (int)y, (int)width, (int)height);
 	}
-	
+	public void drawOval2(double x, double y, double width, double height) {
+		g2d.drawOval((int)x-((int)width/2), (int)y-((int)height/2), (int)width, (int)height);
+	}
 	public void drawPolygon(int[] xpoints, int[] ypoints, int npoints) {
 		g2d.drawPolygon(xpoints, ypoints, npoints);
 	}
-	public void fillRect(int x,int y, int width, int height) {
-		g2d.fillRect(x, y, width, height);
+	public void fillRect(double x,double y, double width, double height) {
+		g2d.fillRect((int)x, (int)y, (int)width, (int)height);
 	}
 	
-	public void fillRect2(int x1,int y1, int x2, int y2) {
-		g2d.fillRect(x1, y1, Math.abs(x2-x1), Math.abs(y2-y1));
+	public void fillRect2(double x1,double y1, double x2, double y2) {
+		g2d.fillRect((int)x1,(int) y1,(int) Math.abs(x2-x1), (int)Math.abs(y2-y1));
 	}
 	
-	public void fillOval(int x, int y, int width, int height) {
-		g2d.fillOval(x, y, width, height);
+	public void fillOval(double x, double y, double width, double height) {
+		g2d.fillOval((int)x, (int)y, (int)width, (int)height);
 	}
-	
+	public void fillOval2(double x, double y, double width, double height) {
+		g2d.fillOval((int)x-((int)width>>1), (int)y-((int)height>>1), (int)width, (int)height);
+	}
 	public void fillPolygon(int[] xpoints, int[] ypoints, int npoints) {
 		g2d.fillPolygon(xpoints, ypoints, npoints);
 	}
@@ -231,11 +235,17 @@ public class QWindow extends JPanel implements KeyListener, MouseListener, Mouse
 		g2d.drawPolyline(xpoints, ypoints, npoints);
 	}
 	
+	public void drawString() {
+		
+	}
+	
 	public int getFps() {
 		return fps;
 	}
 	public void setFps(int fps) {
 		this.fps = fps;
+		delay = (int)(1000.0/fps);
+		timer.setDelay(delay);;
 	}
 	public void setColor(Color c) {
 		curColor = c;

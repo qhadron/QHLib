@@ -49,33 +49,54 @@ public class mat3 {
 		return new mat3();
 	}
 	
-	public static mat3 translate(double x, double y) {
+	public static mat3 getTranslation(double x, double y) {
 		return new mat3(1,0,x,0,1,y,0,0,1);
 	}
 	
-	public static mat3 rotate(double angle) {
+	public static mat3 getRotatation(double angle) {
 		return new mat3(Math.cos(angle),-Math.sin(angle),Math.sin(angle),Math.cos(angle));
 	}
 	
-	public static mat3 scale(double val) {
-		return new mat3(val,0,0,val);
+	public static mat3 getScale(double valx, double valy) {
+		return new mat3(valx,0,0,valy);
+	}
+	
+	public mat3 setTranslation(double x, double y) {
+		m02 = x;
+		m12 = y;
+		return this;
+	}
+	
+	public mat3 setScale(double valx, double valy) {
+		m00 = valx;
+		m11 = valy;
+		return this;
+	}
+	
+	public mat3 setRotation(double angle) {
+		double cos = Math.cos(angle), sin = Math.sin(angle);
+		m01 = m00 *(-sin);
+		m00 = m00 * cos;
+		m10 = m11 * sin;
+		m11 = m11 * cos;
+		return this;
 	}
 	
 	public mat3 mul(mat3 other) {
-		 mat3 temp = new mat3(this);
-		 m00 = temp.m00 * other.m00 + temp.m01*other.m10 + temp.m02 * other.m20;
-		 m01 = temp.m00 * other.m01 + temp.m01*other.m11 + temp.m02 * other.m21;
-		 m02 = temp.m00 * other.m02 + temp.m01*other.m12 + temp.m02 * other.m22;
+		 mat3 result = new mat3();
+		 result.m00 = m00 * other.m00 + m01*other.m10 + m02 * other.m20;
+		 result.m01 = m00 * other.m01 + m01*other.m11 + m02 * other.m21;
+		 result.m02 = m00 * other.m02 + m01*other.m12 + m02 * other.m22;
 		 
-		 m10 = temp.m10 * other.m00 + temp.m11*other.m10 + temp.m12 * other.m20;
-		 m11 = temp.m10 * other.m01 + temp.m11*other.m11 + temp.m12 * other.m21;
-		 m12 = temp.m10 * other.m02 + temp.m11*other.m12 + temp.m12 * other.m22;
+		 result.m10 = m10 * other.m00 + m11*other.m10 + m12 * other.m20;
+		 result.m11 = m10 * other.m01 + m11*other.m11 + m12 * other.m21;
+		 result.m12 = m10 * other.m02 + m11*other.m12 + m12 * other.m22;
 		 
-		 m20 = temp.m20 * other.m00 + temp.m21*other.m10 + temp.m22 * other.m20;
-		 m21 = temp.m20 * other.m01 + temp.m21*other.m11 + temp.m22 * other.m21;
-		 m22 = temp.m20 * other.m02 + temp.m21*other.m12 + temp.m22 * other.m22;
+		 result.m20 = m20 * other.m00 + m21*other.m10 + m22 * other.m20;
+		 result.m21 = m20 * other.m01 + m21*other.m11 + m22 * other.m21;
+		 result.m22 = m20 * other.m02 + m21*other.m12 + m22 * other.m22;
 		 
-		 return this;
+		 return result;
 	}
 	
 	
@@ -86,6 +107,11 @@ public class mat3 {
 	
 	public String toString() {
 		return String.format("%.4f %.4f %.4f\n%.4f %.4f %.4f\n%.4f %.4f %.4f", m00,m01,m02,m10,m11,m12,m20,m21,m22);
+	}
+
+	public void clear() {
+		m00 = m11 = m22 = 1;
+		m01 = m02 = m10 = m12 = m20 = m21 = 0;
 	}
 
 }
