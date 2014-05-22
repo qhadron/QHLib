@@ -2,6 +2,7 @@ package qh.qwindow;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -16,7 +17,6 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.awt.image.BufferedImage;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -55,6 +55,10 @@ public class QWindow extends JPanel implements KeyListener, MouseListener, Mouse
 	private Color backgroundColor = Color.white;
 	private boolean doubleBuffered;
 	private volatile boolean needUpdate;
+	private boolean resized;
+	private Rectangle bounds = new Rectangle(0,0,0,0);
+	
+	public boolean initialized = false;
 	
 	public QWindow() {
 		super(false);
@@ -154,13 +158,16 @@ public class QWindow extends JPanel implements KeyListener, MouseListener, Mouse
 	
 	public void start() {
 		timer.start();
-		if (image == null) {
-			image = createVolatileImage(getWidth(), getHeight());
+		while (image == null) {
+			image = createImage(getWidth(), getHeight());
+			while(g2d == null)
 			g2d = (Graphics2D) image.getGraphics();
 			g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 		}
 		clear();
+		repaint();
+		initialized = true;
 	}
 
 	@Override
@@ -172,9 +179,21 @@ public class QWindow extends JPanel implements KeyListener, MouseListener, Mouse
 	public Dimension getPreferredSize() {
         return new Dimension(maxx,maxy);
     }
-
+	
+	
+	
 	@Override
 	public void paint(Graphics g) {
+		if (!(bounds.width == getBounds().width && bounds.height == getBounds().height)) {
+			bounds = getBounds();
+			Image old = image.getScaledInstance(-1, -1, Image.SCALE_REPLICATE);
+			image = createImage(bounds.width,bounds.height);
+			g2d = (Graphics2D) image.getGraphics();
+			g2d.setBackground(Color.white);
+			clear();
+			g2d.drawImage(old, 0, 0, this);
+			old.flush();
+		}
 		Rectangle r = g.getClipBounds();
 		if (!doubleBuffered||needUpdate) {
 			g.drawImage(image, r.x, r.y, r.x+r.width, r.y + r.height, r.x, r.y, r.x + r.width, r.y + r.height, Color.white, null);
@@ -235,8 +254,8 @@ public class QWindow extends JPanel implements KeyListener, MouseListener, Mouse
 		g2d.drawPolyline(xpoints, ypoints, npoints);
 	}
 	
-	public void drawString() {
-		
+	public void drawString(String string, double x, double y) {
+		g2d.drawString(string, (int)x, (int) y);
 	}
 	
 	public int getFps() {
@@ -336,27 +355,21 @@ public class QWindow extends JPanel implements KeyListener, MouseListener, Mouse
 		mouseX = e.getX();
 		mouseY = e.getY();
 	}
-
+	
+	public boolean isResized() {
+		if (resized) {
+			resized = false;
+			return true;
+		}
+		return false;
+	}
 	
 	@Override
 	public void componentResized(ComponentEvent e) {
-		BufferedImage temp;
-		try {
-			 temp = new BufferedImage(maxx, maxy, BufferedImage.TYPE_4BYTE_ABGR);
-		} catch (IllegalArgumentException exp) {
-			temp = new BufferedImage(maxx+1,maxy+1,BufferedImage.TYPE_4BYTE_ABGR);
-		}
-		temp.createGraphics().drawImage(image,0,0,null);
+		repaint();
 		maxx = getWidth();
 		maxy = getHeight();
-		image = createVolatileImage((maxx==0)?1:maxx, (maxy==0)?1:maxy);
-		if (image!=null) {
-			g2d = (Graphics2D) image.getGraphics();
-			g2d.setBackground(Color.white);
-			g2d.clearRect(0, 0, maxx, maxy);
-			g2d.drawImage(temp, 0, 0, null);
-			g2d.setColor(curColor);
-		}
+		resized = true;
 	}
 
 	@Override
@@ -372,6 +385,10 @@ public class QWindow extends JPanel implements KeyListener, MouseListener, Mouse
 	@Override
 	public void componentHidden(ComponentEvent e) {
 		
+	}
+
+	public FontMetrics getFontMetrics() {
+		return g2d.getFontMetrics();
 	}
 	
 }
