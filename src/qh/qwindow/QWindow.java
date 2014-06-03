@@ -186,13 +186,18 @@ public class QWindow extends JPanel implements KeyListener, MouseListener, Mouse
 	public void paint(Graphics g) {
 		if (!(bounds.width == getBounds().width && bounds.height == getBounds().height)) {
 			bounds = getBounds();
-			Image old = image.getScaledInstance(-1, -1, Image.SCALE_REPLICATE);
+			Image old = null;
+			if (image != null) {
+			    old  = image.getScaledInstance(-1, -1, Image.SCALE_REPLICATE);
+			}
 			image = createImage(bounds.width,bounds.height);
 			g2d = (Graphics2D) image.getGraphics();
 			g2d.setBackground(Color.white);
 			clear();
-			g2d.drawImage(old, 0, 0, this);
-			old.flush();
+			if (old != null) {
+			    g2d.drawImage(old, 0, 0, this);
+			    old.flush();
+			}
 		}
 		Rectangle r = g.getClipBounds();
 		if (!doubleBuffered||needUpdate) {
