@@ -56,6 +56,7 @@ public class QWindow extends JPanel implements KeyListener, MouseListener, Mouse
 	private boolean doubleBuffered;
 	private volatile boolean needUpdate;
 	private boolean resized;
+	private boolean resizable = false;
 	private Rectangle bounds = new Rectangle(0,0,0,0);
 	
 	public boolean initialized = false;
@@ -129,11 +130,11 @@ public class QWindow extends JPanel implements KeyListener, MouseListener, Mouse
 		}
 		mainFrame = new JFrame(title);
 		mainFrame.setMinimumSize(new Dimension(0,0));
-		mainFrame.setResizable(true);
+		mainFrame.setResizable(false);
 		mainFrame.setAutoRequestFocus(true);
 		mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
-
+		
 		//initialize the canvas
 		setFocusable(true);
 		setDoubleBuffered(false);
@@ -300,7 +301,16 @@ public class QWindow extends JPanel implements KeyListener, MouseListener, Mouse
 	public String getTitle() {
 		return title;
 	}
-
+	
+	public void setResizeable(boolean val) {
+		resizable = val;
+		mainFrame.setResizable(resizable);
+	}
+	
+	public boolean isResizable() {
+		return resizable;
+	}
+	
 	@Override
 	public void keyPressed(KeyEvent e) {
 		keysDown[e.getKeyCode()] = true;
