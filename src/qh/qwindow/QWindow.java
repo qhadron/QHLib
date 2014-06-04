@@ -401,9 +401,33 @@ public class QWindow extends JPanel implements KeyListener, MouseListener, Mouse
 	public void componentHidden(ComponentEvent e) {
 		
 	}
-
+	
 	public FontMetrics getFontMetrics() {
 		return g2d.getFontMetrics();
+	}
+	
+	@Override
+	public void addKeyListener(KeyListener listener) {
+		this.removeKeyListener(this);
+		super.addKeyListener(listener);
+	}
+	
+	@Override
+	public synchronized void addMouseListener(MouseListener l) {
+		this.removeMouseListener(this);;
+		super.addMouseListener(l);
+	}
+
+	@Override
+	public synchronized void addMouseMotionListener(MouseMotionListener l) {
+		this.removeMouseMotionListener(this);
+		super.addMouseMotionListener(l);
+	}
+
+	@Override
+	public synchronized void addComponentListener(ComponentListener l) {
+		this.removeComponentListener(this);
+		super.addComponentListener(l);
 	}
 	
 }
