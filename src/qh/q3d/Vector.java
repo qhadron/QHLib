@@ -88,7 +88,6 @@ public class Vector {
 		this.X += x;
 		this.Y += x;
 		this.Z += x;
-		this.W += x;
 		return this;
 	}
 
@@ -96,7 +95,6 @@ public class Vector {
 		this.X += other.X;
 		this.Y += other.Y;
 		this.Z += other.Z;
-		this.W = other.W;
 		return this;
 	}
 
@@ -179,7 +177,6 @@ public class Vector {
 		X *= other.X;
 		Y *= other.Y;
 		Z *= other.Z;
-		W *= other.W;
 		return this;
 	}
 
@@ -210,7 +207,6 @@ public class Vector {
 		this.X -= x;
 		this.Y -= x;
 		this.Z -= x;
-		this.W -= x;
 		return this;
 	}
 

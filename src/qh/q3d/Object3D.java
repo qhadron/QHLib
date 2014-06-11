@@ -27,6 +27,31 @@ public abstract class Object3D {
 	public Vector velocity;
 	
 	/**
+	 * Scaling of this object
+	 */
+	public Vector scale;
+	
+	/**
+	 * Constructs the object:
+	 * <ol>
+	 * <li> Initializes the vertex array </li>
+	 * <li> Initializes all the positional vectors</li>
+	 * </ol>
+	 * @param verticiesCount the number of vertices of this object
+	 */
+	public Object3D(int verticiesCount, int facesCount) {
+		this.name = "Object";
+		this.vertices = new Vertex[verticiesCount];
+		for (int i = 0; i < vertices.length; ++i)
+			vertices[i] = new Vertex();
+		this.triangles = new Triangle[facesCount];
+		position = new Vector();
+		rotation = new Vector();
+		velocity = new Vector();
+		scale = new Vector(1,1,1);
+	}
+	
+	/**
 	 * Constructs the object:
 	 * <ol>
 	 * <li> Sets the name </li>
@@ -42,14 +67,12 @@ public abstract class Object3D {
 		for (int i = 0; i < vertices.length; ++i)
 			vertices[i] = new Vertex();
 		this.triangles = new Triangle[facesCount];
-		setFaces(triangles);
 		position = new Vector();
 		rotation = new Vector();
 		velocity = new Vector();
+		scale = new Vector(1,1,1);
 	}
-	
-	protected abstract void setFaces(Triangle[] arrayOfFaces);
-	
+		
 	public void setPosition(double x, double y, double z) {
 		position.set(x, y, z);
 	}
@@ -60,6 +83,10 @@ public abstract class Object3D {
 	
 	public void setVelocity(double x, double y, double z) {
 		velocity.set(x,y,z);
+	}
+	
+	public void setScale(double x, double y, double z) {
+		scale.set(x, y, z);
 	}
 	
 	/**
@@ -76,6 +103,10 @@ public abstract class Object3D {
 	 */
 	@Override
 	public String toString() {
-		return this.getClass().getSimpleName() + "[name=" + name + ", position=" + position + "]";
+		String classname = this.getClass().getName();
+		int pos = classname.lastIndexOf('.');
+		if (pos != -1)
+			classname = classname.substring(++pos);
+		return classname + "[name=" + name + ", position=" + position + "]";
 	}
 }

@@ -164,8 +164,8 @@ public class Window3D extends JPanel implements ComponentListener {
 		while (it.hasNext()) {
 			Object3D cur = it.next();
 			cur.update(dt);
-			Matrix model = Matrix.rotationYXZ(cur.rotation.Y, cur.rotation.X,
-					cur.rotation.Z).mul(Matrix.translate(cur.position));
+			Matrix model = Matrix.scale(cur.scale).mul(Matrix.rotationYXZ(cur.rotation.Y, cur.rotation.X,
+					cur.rotation.Z)).mul(Matrix.translate(cur.position));
 			Matrix MV = model.mul(view);
 			Matrix MVP = MV.mul(projection);
 			Vertex[] pixels = new Vertex[cur.vertices.length];
@@ -428,6 +428,7 @@ public class Window3D extends JPanel implements ComponentListener {
 	}
 
 	public void addObject(Object3D mesh) {
+		if (mesh != null)
 		worldObjects.add(mesh);
 	}
 

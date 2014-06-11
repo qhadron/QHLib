@@ -66,6 +66,15 @@ public class Matrix {
 		matrix.m[10] = z;
 		return matrix;
 	}
+	
+	public static Matrix scale(Vector size) {
+		Matrix matrix = new Matrix();
+		matrix.m[0] = size.X;
+		matrix.m[5] = size.Y;
+		matrix.m[10] = size.Z;
+		return matrix;
+	}
+	
 	public static Matrix rotationX(double radians) {
 		Matrix matrix = new Matrix();
 		matrix.m[5] = Math.cos(radians);
