@@ -11,7 +11,7 @@ import qh.q3d.objects.GenericObject3D;
 public class Parser3D {
 
 	public static LinkedList<Object3D> parse(String filename) throws Exception {
-		return parse(new File(filename));
+		return parse(new File(filename).getAbsoluteFile());
 	}
 
 	public static LinkedList<Object3D> parse(File file) throws IOException {
