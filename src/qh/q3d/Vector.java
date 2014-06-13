@@ -190,17 +190,19 @@ public class Vector {
 		return this;
 	}
 
-	public void set(double x, double y, double z) {
+	public Vector set(double x, double y, double z) {
 		X = x;
 		Y = y;
 		Z = z;
+		return this;
 	}
 	
-	public void set(double x, double y, double z, double w) {
+	public Vector set(double x, double y, double z, double w) {
 		X = x;
 		Y = y;
 		Z = z;
 		W = w;
+		return this;
 	}
 
 	public Vector sub(double x) {

@@ -16,20 +16,23 @@ public abstract class Object3D {
 	/**
 	 * Global position of this object
 	 */
-	public Vector position;
+	private Vector position;
 	/**
 	 * Current rotation of this object
 	 */
-	public Vector rotation;
+	private Vector rotation;
 	/**
 	 * Velocity of this object
 	 */
-	public Vector velocity;
+	private Vector velocity;
 	
 	/**
 	 * Scaling of this object
 	 */
-	public Vector scale;
+	private Vector scale;
+	
+	private boolean modelChanged;
+	private Matrix modelMatrix;
 	
 	/**
 	 * Constructs the object:
@@ -49,6 +52,8 @@ public abstract class Object3D {
 		rotation = new Vector();
 		velocity = new Vector();
 		scale = new Vector(1,1,1);
+		modelChanged = true;
+		this.getModelMatrix();
 	}
 	
 	/**
@@ -71,30 +76,57 @@ public abstract class Object3D {
 		rotation = new Vector();
 		velocity = new Vector();
 		scale = new Vector(1,1,1);
+		modelChanged = true;
+		this.getModelMatrix();
 	}
 		
 	public void setPosition(double x, double y, double z) {
 		position.set(x, y, z);
+		modelChanged = true;
 	}
 
 	public void setRotation(double x, double y, double z) {
 		rotation.set(x, y, z);
+		modelChanged = true;
 	}
 	
 	public void setVelocity(double x, double y, double z) {
 		velocity.set(x,y,z);
+		modelChanged = true;
 	}
 	
 	public void setScale(double x, double y, double z) {
 		scale.set(x, y, z);
+		modelChanged = true;
 	}
 	
+	
+	public void setPosition(Vector val) {
+		position.set(val);
+		modelChanged = true;
+	}
+	
+	public void setRotation(Vector val) {
+		rotation.set(val);
+		modelChanged = true;
+	}
+	
+	public void setScale(Vector val) {
+		scale.set(val);
+		modelChanged = true;
+	}
+	
+	public void setVeloctiy(Vector val) {
+		velocity.set(val);
+		modelChanged = true;
+	}
 	/**
 	 * Updates the object whenever it is drawn. Moves the object by its {@link #velocity} by default.
 	 * @param dt change of time in seconds
 	 */
 	public void update(double dt) {
 		position.add(Vector.mul(velocity, dt));
+		modelMatrix.mul(Matrix.translate(velocity));
 	}
 	
 	/** 
@@ -108,5 +140,15 @@ public abstract class Object3D {
 		if (pos != -1)
 			classname = classname.substring(++pos);
 		return classname + "[name=" + name + ", position=" + position + "]";
+	}
+
+	/**
+	 * @return a copy of the model matrix of this object
+	 */
+	public Matrix getModelMatrix() {
+		if (modelChanged)
+			modelMatrix = Matrix.scale(scale).mul(Matrix.rotationYXZ(rotation.Y, rotation.X,
+				rotation.Z)).mul(Matrix.translate(position));
+		return new Matrix(modelMatrix);
 	}
 }

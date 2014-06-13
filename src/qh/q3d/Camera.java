@@ -10,22 +10,38 @@ package qh.q3d;
 public class Camera {
 
 
-	private Vector position, target, rotation;
+	private Vector position, target, rotation, targetRotation;
 	private double fov, near, far;
 	private Matrix view, perspective;
 	private boolean viewChanged = true;
 	private boolean screenChanged = true;
+	private boolean velocityChanged = true;
+	private double speed;
+	private Vector velocity;
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "Camera [position=" + position + ", target=" + target
+				+ ", rotation=" + rotation + "]";
+	}
+
 	/*public double ymax,ymin,xmax,xmin;*/
 	public Camera(Vector position, Vector target, Vector rotation) {
 		this.position = position;
 		this.target = target;
 		this.rotation = rotation;
+		this.velocity = new Vector();
+		this.targetRotation = new Vector();
 	}
 	
 	public Camera() {
 		position = new Vector();
 		target = new Vector();
 		rotation = new Vector();
+		velocity = new Vector();
+		this.targetRotation = new Vector();
 	}
 
 	public void setPosition(double x, double y, double z) {
@@ -48,10 +64,12 @@ public class Camera {
 	public void setTarget(Vector pos) {
 		target.set(pos);
 		viewChanged = true;
+		velocityChanged = true;
 	}
 	public void setTarget(double x, double y, double z) {
 		target.set(x, y, z);
 		viewChanged = true;
+		velocityChanged = true;
 	}
 	
 	public void translate(Vector pos) {
@@ -65,7 +83,7 @@ public class Camera {
 	
 	public Matrix getViewMatrix() {
 		if (viewChanged) {
-			view = Matrix.rotationYXZ(rotation).mul(Matrix.lookAt(position, target, Vector.unitY));
+			view = Matrix.rotationYXZ(rotation).mul(Matrix.lookAt(position, Vector.mul(Matrix.rotationYXZ(targetRotation), target), Vector.unitY));
 			viewChanged = false;
 		}
 		return new Matrix(view);
@@ -160,6 +178,56 @@ public class Camera {
 		this.viewChanged = true;
 	}
 	
+	/**
+	 * @param rotation the rotation to set
+	 */
+	public void setTargetRotation(Vector rotation) {
+		this.targetRotation.set(rotation);
+		this.viewChanged = true;
+		velocityChanged = true;
+		
+	}
 	
+	public void setTargetRotation(double x, double y, double z) {
+		this.targetRotation.set(x,y,z);
+		this.viewChanged = true;
+		velocityChanged = true;
+	}
+	
+	public void rotateTarget(Vector rotation) {
+		this.targetRotation.add(rotation);
+		this.viewChanged = true;
+		velocityChanged = true;
+	}
+	
+	public void rotateTarget(double x, double y, double z) {
+		this.targetRotation.X += x;
+		this.targetRotation.Y += y;
+		this.targetRotation.Z += z;
+		this.viewChanged = true;
+		velocityChanged = true;
+	}
+	
+	/**
+	 * @return the speed
+	 */
+	public double getSpeed() {
+		return speed;
+	}
+
+	/**
+	 * @param speed the speed to set
+	 */
+	public void setSpeed(double speed) {
+		this.speed = speed;
+		velocityChanged = true;
+	}
+	
+	public void update(double dt) {
+		if (velocityChanged)
+			velocity = Vector.mul(Vector.sub(target, position).normalize(), speed);
+		if (Math.abs(this.speed) > 1e-8)
+			this.translate(Vector.mul(velocity, dt));
+	}
 	
 }

@@ -197,7 +197,7 @@ public class Matrix {
 	
 	public static Matrix lookAt(Vector eye, Vector target, Vector up) {
 		Matrix res = new Matrix();
-		Vector zaxis = target.sub(eye).normalize();
+		Vector zaxis = Vector.sub(target,eye).normalize();
 		if (zaxis.length() == 0) zaxis.Z = 1;
 		Vector xaxis = Vector.cross(up, zaxis).normalize();
 		if (xaxis.length() == 0) { 

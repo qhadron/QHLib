@@ -10,11 +10,32 @@ import qh.q3d.objects.GenericObject3D;
 
 public class Parser3D {
 
-	public static LinkedList<Object3D> parse(String filename) throws Exception {
-		return parse(new File(filename).getAbsoluteFile());
+	// mandatory data
+	private static final String[] VERTICIES_COUNT_FLAG = { "\"verticesCount\":" };
+	private static final String[] FACE_COUNT_FLAGS = { "\"indexCount\":" };
+	private static final String[] VERTICES_FLAG = { "\"vertices\":[" };
+	private static final String[] FACES_FLAG = { "\"indices\":[" };
+	private static final String[] NAME_FLAG = { "\"name\":\"" };
+	private static final String[] MESH_START_FLAG = { "\"meshes\":[" };
+	// optional data
+	private static final String[] TEXTURE_STRIDE_FLAG = { "\"uvCount\":" };
+	private static final String[] POSITION_FLAG = { "\"position\":[" };
+	private static final String[] ROTATION_FLAG = { "\"rotation\":[" };
+	private static final String[] SCALE_FLAG = { "\"scaling\":[" };
+	
+	
+	//camera
+	private static final String[] CAMERA_START_FLAG = {"\"cameras\":[{"};
+	private static final String[] TARGET_FLAG = {"\"target\":["};
+	private static final String[] FOV_FLAG = {"\"fov\":"};
+	private static final String[] ZNEAR_FLAG= {"\"minZ\":"};
+	private static final String[] ZFAR_FLAG = {"\"maxZ\":"};
+	
+	public static LinkedList<Object3D> getMesh(String filename) throws Exception {
+		return getMesh(new File(filename).getAbsoluteFile());
 	}
 
-	public static LinkedList<Object3D> parse(File file) throws IOException {
+	public static LinkedList<Object3D> getMesh(File file) throws IOException {
 		// 10KB buffer
 		char[] buffer = new char[10240];
 		StringBuffer sb = new StringBuffer((int) file.length());
@@ -30,27 +51,13 @@ public class Parser3D {
 					+ e.getMessage());
 			e.printStackTrace();
 		}
-		return parseString(sb.toString());
+		return getMeshFromString(sb.toString());
 	}
 
-	// mandatory data
-	private static final String[] VERTICIES_COUNT_FLAG = { "\"verticesCount\":" };
-	private static final String[] FACE_COUNT_FLAGS = { "\"indexCount\":" };
-	private static final String[] VERTICES_FLAG = { "\"vertices\":[" };
-	private static final String[] FACES_FLAG = { "\"indices\":[" };
-	private static final String[] NAME_FLAG = { "\"name\":\"" };
-	private static final String[] START_FLAG = { "\"meshes\":[" };
-
-	// optional data
-	private static final String[] TEXTURE_STRIDE_FLAG = { "\"uvCount\":" };
-	private static final String[] POSITION_FLAG = { "\"position\":[" };
-	private static final String[] ROTATION_FLAG = { "\"rotation\":[" };
-	private static final String[] SCALE_FLAG = { "\"scaling\":[" };
-
-	public static LinkedList<Object3D> parseString(String str)
+	public static LinkedList<Object3D> getMeshFromString(String str)
 			throws NumberFormatException {
 		LinkedList<Object3D> result = new LinkedList<Object3D>();
-		int beginning = locateStart(str, START_FLAG, -1);
+		int beginning = locateStart(str, MESH_START_FLAG, -1);
 
 		while (locateStart(str, NAME_FLAG, beginning) > 0) {
 			//collecting information to construct the object
@@ -133,7 +140,7 @@ public class Parser3D {
 				if (strPosition.length > 3)
 					throw new NumberFormatException(
 							"More than 3 cooridnates for position");
-				obj.position.set(Double.parseDouble(strPosition[0]),
+				obj.setPosition(Double.parseDouble(strPosition[0]),
 						Double.parseDouble(strPosition[1]),
 						Double.parseDouble(strPosition[2]));
 			} catch (NumberFormatException e) {
@@ -152,7 +159,7 @@ public class Parser3D {
 				if (strRotation.length > 3)
 					throw new NumberFormatException(
 							"More than 3 cooridnates for rotation");
-				obj.rotation.set(Double.parseDouble(strRotation[0]),
+				obj.setRotation(Double.parseDouble(strRotation[0]),
 						Double.parseDouble(strRotation[1]),
 						Double.parseDouble(strRotation[2]));
 			} catch (NumberFormatException e) {
@@ -170,7 +177,7 @@ public class Parser3D {
 				if (strScale.length > 3)
 					throw new NumberFormatException(
 							"More than 3 cooridnates for scale");
-				obj.scale.set(Double.parseDouble(strScale[0]),
+				obj.setScale(Double.parseDouble(strScale[0]),
 						Double.parseDouble(strScale[1]),
 						Double.parseDouble(strScale[2]));
 			} catch (NumberFormatException e) {
@@ -181,7 +188,61 @@ public class Parser3D {
 		}
 		return result;
 	}
+	
+	public static Camera getCamera(String filename) throws Exception {
+		return getCamera(new File(filename).getAbsoluteFile());
+	}
 
+	public static Camera getCamera(File file) throws IOException {
+		// 10KB buffer
+		char[] buffer = new char[10240];
+		StringBuffer sb = new StringBuffer((int) file.length());
+		FileReader fr = new FileReader(file);
+		try {
+			while (fr.read(buffer) > 0) {
+				sb.append(buffer);
+			}
+			sb.append(buffer);
+			fr.close();
+		} catch (IOException e) {
+			System.out.println("Unexpected error while reading from file: "
+					+ e.getMessage());
+			e.printStackTrace();
+		}
+		return getCameraFromString(sb.toString());
+	}
+
+	public static Camera getCameraFromString(String str) {
+		Camera result = new Camera();
+		int startpos, endpos, beginning = locateStart(str, CAMERA_START_FLAG, -1);
+		
+		//read target vector
+		startpos = locateStart(str,TARGET_FLAG, beginning);
+		endpos = locateEnd(str,"]", startpos);
+		String[] target = str.substring(startpos, endpos).split(",");
+		if (target.length != 3) 
+			throw new NumberFormatException("Length of target vector is not equal to 3");
+		result.setTarget(Double.parseDouble(target[0]), Double.parseDouble(target[1]), Double.parseDouble(target[2]));
+		
+		//read position vector
+		startpos = locateStart(str,POSITION_FLAG, beginning);
+		endpos = locateEnd(str,"]", startpos);
+		String[] position = str.substring(startpos, endpos).split(",");
+		if (position.length != 3) 
+			throw new NumberFormatException("Length of position vector is not equal to 3");
+		result.setPosition(Double.parseDouble(position[0]), Double.parseDouble(position[1]), Double.parseDouble(position[2]));
+		
+		//read field of view
+		double fov = readDouble(str,FOV_FLAG, beginning);
+		result.setFov(fov);
+		
+		double znear = readDouble(str,ZNEAR_FLAG, beginning);
+		double zfar = readDouble(str, ZFAR_FLAG, beginning);
+		result.setFar(zfar);
+		result.setNear(znear);
+		
+		return result;
+	}
 	private static int locateStart(String str, String[] possibleNames,
 			int lastStart) {
 		assert possibleNames.length > 0;
@@ -224,10 +285,26 @@ public class Parser3D {
 		return Integer.parseInt(str.substring(startpos, endpos));
 	}
 
+	private static double readDouble(String str, String[] possibleNames, int start)
+			throws NumberFormatException {
+		assert possibleNames.length > 0;
+		int startpos = locateStart(str, possibleNames, start), endpos = -1;
+		// search for the end of the int
+		for (int pos = startpos; pos < str.length(); ++pos) {
+			if (!Character.isDigit(str.charAt(pos)) && str.charAt(pos) != '-' && str.charAt(pos) != '.') {
+				endpos = pos;
+				break;
+			}
+		}
+		if (endpos < 0)
+			return -1;
+		return Double.parseDouble(str.substring(startpos, endpos));
+	}
+
 	public static void main(String[] args) {
 		try {
 			LinkedList<Object3D> susanne = Parser3D
-					.parse("C:\\Users\\jackl_000\\Desktop\\cube.babylon");
+					.getMesh("C:\\Users\\jackl_000\\Desktop\\cube.babylon");
 			for (Iterator<Object3D> it = susanne.iterator(); it.hasNext(); ) {
 				Object3D cur = it.next();
 				System.out.println("Loaded: " + cur + "\n");
