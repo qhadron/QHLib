@@ -1,4 +1,9 @@
-package qh.q3d;
+package qh.q3d.objects;
+
+import qh.math.Matrix;
+import qh.math.Vector;
+import qh.q3d.Triangle;
+import qh.q3d.Vertex;
 
 public abstract class Object3D {
 	/**
@@ -150,5 +155,17 @@ public abstract class Object3D {
 			modelMatrix = Matrix.scale(scale).mul(Matrix.rotationYXZ(rotation.Y, rotation.X,
 				rotation.Z)).mul(Matrix.translate(position));
 		return new Matrix(modelMatrix);
+	}
+	
+	public void calculateNormals() {
+		for (int i =0; i < triangles.length; ++i) {
+			triangles[i].calcNormal(vertices[triangles[i].A], vertices[triangles[i].B], vertices[triangles[i].C]);
+		}
+	}
+	
+	public void calculateCenters() {
+		for (int i =0; i < triangles.length; ++i) {
+			triangles[i].calcCenter(vertices[triangles[i].A], vertices[triangles[i].B], vertices[triangles[i].C]);
+		}
 	}
 }

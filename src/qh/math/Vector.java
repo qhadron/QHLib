@@ -1,4 +1,6 @@
-package qh.q3d;
+package qh.math;
+
+import qh.q3d.MathHelper;
 
 public class Vector {
 	public static final double INF = 1e10;
@@ -43,6 +45,7 @@ public class Vector {
 	 * @author jackl_000
 	 * 
 	 */
+	//TODO check math on this
 	public Vector mul(Matrix mat) {
 		double tx, ty, tz, tw;
 		tx = mat.m[ 0] * X + mat.m[ 1] * Y + mat.m[ 2] * Z + mat.m[ 3] * W;
@@ -221,7 +224,7 @@ public class Vector {
 
 	@Override
 	public String toString() {
-		return String.format("Vector (%.2f, %.2f, %.2f, %.2f)", X, Y, Z, W);
+		return "Vector (" + MathHelper.round(X, 2) + "," + MathHelper.round(Y, 2) + ","+ MathHelper.round(Z, 2) + ","+ MathHelper.round(W, 2) + ")";
 	}
 
 	public static Vector transformCoords(Vector vec, Matrix mat) {
@@ -241,6 +244,10 @@ public class Vector {
 
 	public static Vector sub(Vector a, Vector b) {
 		return new Vector(a).sub(b);
+	}
+
+	public static Vector add(Vector a, Vector b) {
+		return new Vector(a).add(b);
 	}
 	
 

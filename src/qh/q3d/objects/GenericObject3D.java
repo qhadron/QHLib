@@ -3,8 +3,6 @@
  */
 package qh.q3d.objects;
 
-import qh.q3d.Object3D;
-import qh.q3d.Triangle;
 
 /**
  * @author jackl_000
