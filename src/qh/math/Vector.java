@@ -22,7 +22,15 @@ public class Vector {
 	public static double length(Vector vec) {
 		return Math.sqrt(vec.X * vec.X + vec.Y * vec.Y + vec.Z * vec.Z);
 	}
-
+	
+	public static double lengthSquared(Vector vec) {
+		return (vec.X * vec.X + vec.Y * vec.Y + vec.Z * vec.Z);
+	}
+	
+	public double lengthSquared() {
+		return (X * X + Y * Y + Z * Z);
+	}
+	
 	public static Vector normal(Vector src) {
 		return new Vector(src).divide(src.length());
 	}

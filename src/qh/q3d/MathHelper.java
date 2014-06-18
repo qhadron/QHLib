@@ -151,6 +151,15 @@ public class MathHelper {
 		return new String(s, 0, l);
 	}
 
+	/**
+	 * Rounds a number to a 2-digit string
+	 * @param x the number
+	 * @return the formatted number
+	 */
+	public static String round(double x) {
+		return round(x,2);
+	}
+	
 	public static Vector calcBrightness(Vector vertex, Vector normal,
 			Light light) {
 		return Vector.mul(

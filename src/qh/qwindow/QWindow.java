@@ -44,7 +44,7 @@ public class QWindow extends JPanel implements KeyListener, MouseListener, Mouse
 	private MouseListener mouseListener = this;
 	private MouseMotionListener mouseMotionListener = this;
 	
-
+	
 	Timer timer;
 	private int fps = 30;
 	private int delay;

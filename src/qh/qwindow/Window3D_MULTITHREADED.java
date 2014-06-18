@@ -41,9 +41,9 @@ import qh.q3d.camera.CameraFP;
 import qh.q3d.objects.Light;
 import qh.q3d.objects.Object3D;
 
-public class Window3D extends JPanel implements ComponentListener, KeyListener,
+public class Window3D_MULTITHREADED extends JPanel implements ComponentListener, KeyListener,
 		MouseMotionListener, MouseListener, MouseWheelListener {
-
+	
 	private static final boolean DEBUG = false;
 	private static final boolean USE_MOUSE = false;
 	/** codes for computing the regions a line belongs to */
@@ -89,12 +89,13 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 
 	/** whether or not to draw in wireframe mode */
 	private volatile boolean WIREFRAME = true;
+	
 
 	/**
 	 * Render distance, defaults to POSITIVE_INFINITY (render all objects)
 	 */
 	private volatile double RENDER_DISTANCE = Double.POSITIVE_INFINITY;
-
+	
 	/**
 	 * A list of all the lights
 	 */
@@ -137,7 +138,7 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	/**
 	 * Creates a 640x480 window with the title "New Window"
 	 */
-	public Window3D() {
+	public Window3D_MULTITHREADED() {
 		super(false);
 		screenWidth = 640;
 		screenHeight = 480;
@@ -151,7 +152,7 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	 * @param title
 	 *            the title of the window
 	 */
-	public Window3D(String title) {
+	public Window3D_MULTITHREADED(String title) {
 		super(false);
 		this.title = title;
 		this.screenWidth = 640;
@@ -167,7 +168,7 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	 * @param height
 	 *            the height of the window
 	 */
-	public Window3D(int width, int height) {
+	public Window3D_MULTITHREADED(int width, int height) {
 		super(false);
 		this.screenWidth = width;
 		this.screenHeight = height;
@@ -185,7 +186,7 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	 * @param height
 	 *            the height of the window
 	 */
-	public Window3D(String title, int width, int height) {
+	public Window3D_MULTITHREADED(String title, int width, int height) {
 		super(false);
 		this.title = title;
 		this.screenWidth = width;
@@ -322,7 +323,6 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 		double rotX = camera.getRotX(), rotY = camera.getRotY(), rotZ = camera
 				.getRotZ();
 		boolean reverseY = false;
-		boolean reverseZ = false;
 		if (rotX > MathHelper.TWO_PI) {
 			camera.rotateX(-MathHelper.TWO_PI);
 		}
@@ -355,8 +355,7 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 		}
 		reverseY = MathHelper.between(rotX, MathHelper.HALF_PI,
 				MathHelper.THREEHALVES_PI);
-		reverseZ = MathHelper.between(rotY, MathHelper.HALF_PI,
-				MathHelper.THREEHALVES_PI);
+
 		if (keysBuffer[KeyEvent.VK_UP]) {
 			camera.addSpeed(ACCEL);
 		} else if (keysBuffer[KeyEvent.VK_DOWN]) {
@@ -379,15 +378,9 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 			camera.rotateX(-ROTATION_SPEED);
 		}
 		if (keysBuffer[KeyEvent.VK_Q] || mouseLeftDown) {
-			if (reverseZ)
-				camera.rotateZ(ROTATION_SPEED);
-			else
-				camera.rotateZ(-ROTATION_SPEED);
+			camera.rotateZ(-ROTATION_SPEED);
 		} else if (keysBuffer[KeyEvent.VK_E] || mouseRightDown) {
-			if (reverseZ)
-				camera.rotateZ(-ROTATION_SPEED);
-			else
-				camera.rotateZ(ROTATION_SPEED);
+			camera.rotateZ(ROTATION_SPEED);
 		}
 		if (keysBuffer[KeyEvent.VK_SPACE]) {
 			camera.translate(0, MOVEMENT_SPEED, 0);
@@ -1017,16 +1010,14 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	private double FPS, lastFPS;
 	long dt, accumdt;
 	long framesRendered;
-
 	@Override
 	public void paint(Graphics g) {
 		synchronized (renderlock) {
 			try {
 				renderlock.wait(5);
-				// skip a frame
-				if (FRAME_SKIPPING && calcThread != null
-						&& calcThread.isInterrupted()) {
-					// lastTime = System.currentTimeMillis();
+				//skip a frame
+				if (FRAME_SKIPPING && calcThread != null && calcThread.isInterrupted()) {
+					//lastTime = System.currentTimeMillis();
 					return;
 				}
 				accumdt += dt = (System.currentTimeMillis() - lastTime);
@@ -1034,20 +1025,16 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 				g.drawImage(mbf, 0, 0, this);
 				if (accumdt > 1000) {
 					FPS = (double) framesRendered / accumdt * 1000;
-					FPS = FPS_RATIO * FPS + (1 - FPS_RATIO) * lastFPS;
+					FPS = FPS_RATIO * FPS + (1-FPS_RATIO) * lastFPS;
 					lastFPS = FPS;
 					framesRendered = 0;
 					accumdt = 0;
 				}
 				g.setColor(inverseColor(getBackground()));
-				g.drawString("FPS:\t" + MathHelper.round(FPS), 10,
-						curLine += LINE_HEIGHT);
+				g.drawString("FPS:\t" + MathHelper.round(FPS), 10, curLine += LINE_HEIGHT);
 				g.drawString(camera.toString(), 10, curLine += LINE_HEIGHT);
-				g.drawString(
-						"Velocity: " + MathHelper.round(camera.getSpeed()), 10,
-						curLine += LINE_HEIGHT);
-				g.drawString((WIREFRAME) ? "Wireframe mode" : "Shading mode",
-						10, curLine += LINE_HEIGHT);
+				g.drawString("Velocity: " + MathHelper.round(camera.getSpeed()), 10, curLine += LINE_HEIGHT);
+				g.drawString((WIREFRAME)?"Wireframe mode":"Shading mode", 10, curLine += LINE_HEIGHT);
 				g.drawLine((screenWidth >> 1) - CROSSHAIR_SIZE,
 						screenHeight >> 1, (screenWidth >> 1) + CROSSHAIR_SIZE,
 						screenHeight >> 1);
@@ -1141,8 +1128,7 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	}
 
 	/**
-	 * @param distance
-	 *            the distance to set
+	 * @param distance the distance to set
 	 */
 	public void setRenderDistance(double distance) {
 		RENDER_DISTANCE = distance * distance;

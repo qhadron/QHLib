@@ -41,7 +41,7 @@ import qh.q3d.camera.CameraFP;
 import qh.q3d.objects.Light;
 import qh.q3d.objects.Object3D;
 
-public class Window3D extends JPanel implements ComponentListener, KeyListener,
+public class Window3D_UNITHREAD extends JPanel implements ComponentListener, KeyListener,
 		MouseMotionListener, MouseListener, MouseWheelListener {
 
 	private static final boolean DEBUG = false;
@@ -60,17 +60,6 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	/** varaibles regarding the crosshair in the center of the screen */
 	private static final int LINE_HEIGHT = 15;
 	private static final int CROSSHAIR_SIZE = 5;
-
-	/** render delay of the engine */
-	private static final long RENDER_DELAY = 20; // aiming for 100 updates / sec
-	private static final double FPS_RATIO = 1;
-	private static final boolean FRAME_SKIPPING = true;
-
-	/** offscreen image used for rendering */
-	private BufferedImage mbf;
-
-	/** Thread used for calculations */
-	private Thread calcThread;
 
 	/** Thread used for parsing input */
 	private Thread inputThread;
@@ -120,12 +109,12 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 
 	private JFrame mainFrame;
 
-	private Graphics2D g2d;
+	/**
+	 * Graphics used for drawing
+	 */
+	private Graphics drawingGraphics;
 
 	private PrintStream logger;
-
-	/** object lock used to block premature updates of the offscreen buffer */
-	private Object renderlock = new Object();
 
 	/** used for debugging */
 	double viewprojecttime = 0;
@@ -137,7 +126,7 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	/**
 	 * Creates a 640x480 window with the title "New Window"
 	 */
-	public Window3D() {
+	public Window3D_UNITHREAD() {
 		super(false);
 		screenWidth = 640;
 		screenHeight = 480;
@@ -151,7 +140,7 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	 * @param title
 	 *            the title of the window
 	 */
-	public Window3D(String title) {
+	public Window3D_UNITHREAD(String title) {
 		super(false);
 		this.title = title;
 		this.screenWidth = 640;
@@ -167,7 +156,7 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	 * @param height
 	 *            the height of the window
 	 */
-	public Window3D(int width, int height) {
+	public Window3D_UNITHREAD(int width, int height) {
 		super(false);
 		this.screenWidth = width;
 		this.screenHeight = height;
@@ -185,7 +174,7 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	 * @param height
 	 *            the height of the window
 	 */
-	public Window3D(String title, int width, int height) {
+	public Window3D_UNITHREAD(String title, int width, int height) {
 		super(false);
 		this.title = title;
 		this.screenWidth = width;
@@ -216,14 +205,6 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 		zbuffer = new double[screenWidth][screenHeight];
 		// keys buffer initialized to arbitrarily large size
 		keysBuffer = new boolean[KeyEvent.KEY_PRESSED];
-
-		// create a compatible image and graphics component
-		GraphicsEnvironment env = GraphicsEnvironment
-				.getLocalGraphicsEnvironment();
-		GraphicsDevice device = env.getDefaultScreenDevice();
-		GraphicsConfiguration config = device.getDefaultConfiguration();
-		mbf = config.createCompatibleImage(screenWidth, screenWidth);
-		g2d = mbf.createGraphics();
 
 		worldObjects = new LinkedList<Object3D>();
 
@@ -276,28 +257,6 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	}
 
 	public void start() {
-		calcThread = new Thread(new Runnable() {
-			public void run() {
-				long lastTime = System.currentTimeMillis();
-				long dt;
-				while (true) {
-					render((dt = (System.currentTimeMillis() - lastTime)) / 1e3);
-					lastTime = System.currentTimeMillis();
-					try {
-						Thread.sleep(RENDER_DELAY);
-					} catch (InterruptedException e) {
-						if (DEBUG)
-							System.out
-									.println("[not an error]: How dare you interrupt me!");
-					}
-					if (DEBUG)
-						if (dt > RENDER_DELAY + 5)
-							System.out.println("Behind! -> \t" + dt);
-
-				}
-			}
-		}, "Rendering Calculations Thread");
-		calcThread.start();
 
 		inputThread = new Thread(new Runnable() {
 
@@ -322,7 +281,6 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 		double rotX = camera.getRotX(), rotY = camera.getRotY(), rotZ = camera
 				.getRotZ();
 		boolean reverseY = false;
-		boolean reverseZ = false;
 		if (rotX > MathHelper.TWO_PI) {
 			camera.rotateX(-MathHelper.TWO_PI);
 		}
@@ -355,8 +313,7 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 		}
 		reverseY = MathHelper.between(rotX, MathHelper.HALF_PI,
 				MathHelper.THREEHALVES_PI);
-		reverseZ = MathHelper.between(rotY, MathHelper.HALF_PI,
-				MathHelper.THREEHALVES_PI);
+
 		if (keysBuffer[KeyEvent.VK_UP]) {
 			camera.addSpeed(ACCEL);
 		} else if (keysBuffer[KeyEvent.VK_DOWN]) {
@@ -379,15 +336,9 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 			camera.rotateX(-ROTATION_SPEED);
 		}
 		if (keysBuffer[KeyEvent.VK_Q] || mouseLeftDown) {
-			if (reverseZ)
-				camera.rotateZ(ROTATION_SPEED);
-			else
-				camera.rotateZ(-ROTATION_SPEED);
+			camera.rotateZ(-ROTATION_SPEED);
 		} else if (keysBuffer[KeyEvent.VK_E] || mouseRightDown) {
-			if (reverseZ)
-				camera.rotateZ(-ROTATION_SPEED);
-			else
-				camera.rotateZ(ROTATION_SPEED);
+			camera.rotateZ(ROTATION_SPEED);
 		}
 		if (keysBuffer[KeyEvent.VK_SPACE]) {
 			camera.translate(0, MOVEMENT_SPEED, 0);
@@ -433,7 +384,6 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 
 	public void close() {
 		try {
-			calcThread.join(100);
 			inputThread.join(100);
 		} catch (InterruptedException e) {
 			System.out.println("Error while exiting: ");
@@ -449,8 +399,8 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	}
 
 	private void clear() {
-		g2d.setColor(getBackground());
-		g2d.fillRect(0, 0, screenWidth, screenHeight);
+		drawingGraphics.setColor(getBackground());
+		drawingGraphics.fillRect(0, 0, screenWidth, screenHeight);
 		// clear depth buffer
 		for (int i = 0; i < zbuffer.length; ++i)
 			for (int j = 0; j < zbuffer[0].length; ++j)
@@ -458,8 +408,6 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	}
 
 	private void render(double dt) {
-
-		++framesRendered;
 		long temptime, st;
 		;
 		if (DEBUG) {
@@ -479,121 +427,112 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 		}
 		Iterator<Object3D> it = worldObjects.iterator();
 		Vector cameraPos = camera.getPosition();
-		synchronized (renderlock) {
-			clear();
-			synchronized (it) {
-				while (it.hasNext()) {
-					Object3D cur = it.next();
-					if (cur.isMovable())
-						cur.update(dt);
-					if (Vector.sub(cur.getPosition(), cameraPos)
-							.lengthSquared() > RENDER_DISTANCE) {
-						continue;
-					}
+		clear();
+		while (it.hasNext()) {
+			Object3D cur = it.next();
+			if (cur.isMovable())
+				cur.update(dt);
+			if (Vector.sub(cur.getPosition(), cameraPos).lengthSquared() > RENDER_DISTANCE) {
+				continue;
+			}
 
-					Vertex[] pixels = new Vertex[cur.vertices.length];
-					boolean visible[] = new boolean[pixels.length];
-					Matrix model = cur.getModelMatrix();
-					Matrix MVP = Matrix.mul(model, VP);
-					if (DEBUG) {
-						mvptime += (temptime = System.currentTimeMillis() - st);
-						logger.println("MVP time = " + (temptime));
-						st = System.currentTimeMillis();
-					}
-					// calculate vertices
-					Vertex temp;
-					for (int i = 0; i < pixels.length; ++i) {
-						temp = Vertex.mul(MVP, cur.vertices[i]);
-						visible[i] = !(temp.Z < -0.001);
-						if (visible[i])
-							pixels[i] = projectHomogeneous(temp);
-					}
+			Vertex[] pixels = new Vertex[cur.vertices.length];
+			boolean visible[] = new boolean[pixels.length];
+			Matrix model = cur.getModelMatrix();
+			Matrix MVP = Matrix.mul(model, VP);
+			if (DEBUG) {
+				mvptime += (temptime = System.currentTimeMillis() - st);
+				logger.println("MVP time = " + (temptime));
+				st = System.currentTimeMillis();
+			}
+			// calculate vertices
+			Vertex temp;
+			for (int i = 0; i < pixels.length; ++i) {
+				temp = Vertex.mul(MVP, cur.vertices[i]);
+				visible[i] = !(temp.Z < -0.001);
+				if (visible[i])
+					pixels[i] = projectHomogeneous(temp);
+			}
 
-					// System.exit(0);
-					if (DEBUG) {
-						projecttime += (temptime = System.currentTimeMillis()
-								- st);
-						logger.println("projection time = " + (temptime));
-						st = System.currentTimeMillis();
+			// System.exit(0);
+			if (DEBUG) {
+				projecttime += (temptime = System.currentTimeMillis() - st);
+				logger.println("projection time = " + (temptime));
+				st = System.currentTimeMillis();
+			}
+			if (WIREFRAME) {
+				// draw faces
+				for (int i = 0; i < cur.triangles.length; ++i) {
+					if (cur.triangles[i].normal == null) {
+						cur.triangles[i].calcNormal(
+								cur.vertices[cur.triangles[i].A],
+								cur.vertices[cur.triangles[i].B],
+								cur.vertices[cur.triangles[i].C]);
 					}
-					if (WIREFRAME) {
-						// draw faces
-						for (int i = 0; i < cur.triangles.length; ++i) {
-							if (cur.triangles[i].normal == null) {
-								cur.triangles[i].calcNormal(
-										cur.vertices[cur.triangles[i].A],
-										cur.vertices[cur.triangles[i].B],
-										cur.vertices[cur.triangles[i].C]);
-							}
-							if (cur.triangles[i].center == null) {
-								cur.triangles[i].calcCenter(
-										cur.vertices[cur.triangles[i].A],
-										cur.vertices[cur.triangles[i].B],
-										cur.vertices[cur.triangles[i].C]);
-							}
-							if (visible[cur.triangles[i].A]
-									&& visible[cur.triangles[i].B])
-								drawLine(pixels[cur.triangles[i].A],
-										pixels[cur.triangles[i].B]);
-							if (visible[cur.triangles[i].B]
-									&& visible[cur.triangles[i].C])
-								drawLine(pixels[cur.triangles[i].B],
-										pixels[cur.triangles[i].C]);
-							if (visible[cur.triangles[i].C]
-									&& visible[cur.triangles[i].A])
-								drawLine(pixels[cur.triangles[i].C],
-										pixels[cur.triangles[i].A]);
-						}
-
-					} else {
-						// normals of the surfaces, used for shading
-						Vector transformedNormal, transformedCenter;
-						// draw faces
-						for (int i = 0; i < cur.triangles.length; ++i) {
-							if (cur.triangles[i].normal == null) {
-								cur.triangles[i].calcNormal(
-										cur.vertices[cur.triangles[i].A],
-										cur.vertices[cur.triangles[i].B],
-										cur.vertices[cur.triangles[i].C]);
-							}
-							if (cur.triangles[i].center == null) {
-								cur.triangles[i].calcCenter(
-										cur.vertices[cur.triangles[i].A],
-										cur.vertices[cur.triangles[i].B],
-										cur.vertices[cur.triangles[i].C]);
-							}
-							transformedNormal = Vector.transformCoords(
-									cur.triangles[i].normal, MVP);
-							transformedCenter = Vector.transformCoords(
-									cur.triangles[i].center, model);
-							if (visible[cur.triangles[i].A]
-									&& visible[cur.triangles[i].B]
-									&& visible[cur.triangles[i].C]) {
-								drawTriangle(
-										pixels[cur.triangles[i].A],
-										pixels[cur.triangles[i].B],
-										pixels[cur.triangles[i].C],
-										Vector.transformCoords(
-												cur.triangles[i].normal, model),
-										transformedCenter);
-							}
-						}
+					if (cur.triangles[i].center == null) {
+						cur.triangles[i].calcCenter(
+								cur.vertices[cur.triangles[i].A],
+								cur.vertices[cur.triangles[i].B],
+								cur.vertices[cur.triangles[i].C]);
 					}
+					if (visible[cur.triangles[i].A]
+							&& visible[cur.triangles[i].B])
+						drawLine(pixels[cur.triangles[i].A],
+								pixels[cur.triangles[i].B]);
+					if (visible[cur.triangles[i].B]
+							&& visible[cur.triangles[i].C])
+						drawLine(pixels[cur.triangles[i].B],
+								pixels[cur.triangles[i].C]);
+					if (visible[cur.triangles[i].C]
+							&& visible[cur.triangles[i].A])
+						drawLine(pixels[cur.triangles[i].C],
+								pixels[cur.triangles[i].A]);
+				}
 
-					if (DEBUG) {
-						drawTime = (temptime = System.currentTimeMillis() - st);
-						logger.println("draw time = " + (temptime));
+			} else {
+				// normals of the surfaces, used for shading
+				Vector transformedNormal, transformedCenter;
+				// draw faces
+				for (int i = 0; i < cur.triangles.length; ++i) {
+					if (cur.triangles[i].normal == null) {
+						cur.triangles[i].calcNormal(
+								cur.vertices[cur.triangles[i].A],
+								cur.vertices[cur.triangles[i].B],
+								cur.vertices[cur.triangles[i].C]);
+					}
+					if (cur.triangles[i].center == null) {
+						cur.triangles[i].calcCenter(
+								cur.vertices[cur.triangles[i].A],
+								cur.vertices[cur.triangles[i].B],
+								cur.vertices[cur.triangles[i].C]);
+					}
+					transformedNormal = Vector.transformCoords(
+							cur.triangles[i].normal, MVP);
+					transformedCenter = Vector.transformCoords(
+							cur.triangles[i].center, model);
+					if (visible[cur.triangles[i].A]
+							&& visible[cur.triangles[i].B]
+							&& visible[cur.triangles[i].C]) {
+						drawTriangle(pixels[cur.triangles[i].A],
+								pixels[cur.triangles[i].B],
+								pixels[cur.triangles[i].C],
+								Vector.transformCoords(cur.triangles[i].normal,
+										model), transformedCenter);
 					}
 				}
-				renderlock.notify();
 			}
+
 			if (DEBUG) {
-				logger.println("Totals: ");
-				logger.println("VP  time: \t" + (viewprojecttime) + " ms");
-				logger.println("MVP time: \t" + (mvptime) + " ms");
-				logger.println("PRO time: \t" + (projecttime) + " ms");
-				logger.println("DRA time: \t" + (drawTime) + " ms");
+				drawTime = (temptime = System.currentTimeMillis() - st);
+				logger.println("draw time = " + (temptime));
 			}
+		}
+		if (DEBUG) {
+			logger.println("Totals: ");
+			logger.println("VP  time: \t" + (viewprojecttime) + " ms");
+			logger.println("MVP time: \t" + (mvptime) + " ms");
+			logger.println("PRO time: \t" + (projecttime) + " ms");
+			logger.println("DRA time: \t" + (drawTime) + " ms");
 		}
 	}
 
@@ -647,7 +586,8 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	}
 
 	private void putPixel(int x, int y, int rgb) {
-		mbf.setRGB(x, y, rgb);
+		drawingGraphics.setColor(new Color(rgb));
+		drawingGraphics.drawLine(x, y, x, y);
 	}
 
 	public void drawPoint(double x, double y, int rgb) {
@@ -893,10 +833,10 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 		y[0] = (int) p1.Y;
 		y[1] = (int) p2.Y;
 		y[2] = (int) p3.Y;
-		g2d.setColor(new Color((int) MathHelper.interpolateColor(
+		drawingGraphics.setColor(new Color((int) MathHelper.interpolateColor(
 				MathHelper.interpolateColor(p1, p2, 0.5), p3.color.getRGB(),
 				0.5)));
-		g2d.fillPolygon(x, y, 3);
+		drawingGraphics.fillPolygon(x, y, 3);
 	}
 
 	public boolean checkCoords(Vector vec) {
@@ -1013,53 +953,34 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 		}
 	}
 
-	long lastTime = System.currentTimeMillis();
-	private double FPS, lastFPS;
-	long dt, accumdt;
-	long framesRendered;
+	private long lastTime = System.currentTimeMillis();
+	private double lastFPS;
+	public double FPS;
+	long dt;
 
 	@Override
 	public void paint(Graphics g) {
-		synchronized (renderlock) {
-			try {
-				renderlock.wait(5);
-				// skip a frame
-				if (FRAME_SKIPPING && calcThread != null
-						&& calcThread.isInterrupted()) {
-					// lastTime = System.currentTimeMillis();
-					return;
-				}
-				accumdt += dt = (System.currentTimeMillis() - lastTime);
-				int curLine = 0;
-				g.drawImage(mbf, 0, 0, this);
-				if (accumdt > 1000) {
-					FPS = (double) framesRendered / accumdt * 1000;
-					FPS = FPS_RATIO * FPS + (1 - FPS_RATIO) * lastFPS;
-					lastFPS = FPS;
-					framesRendered = 0;
-					accumdt = 0;
-				}
-				g.setColor(inverseColor(getBackground()));
-				g.drawString("FPS:\t" + MathHelper.round(FPS), 10,
-						curLine += LINE_HEIGHT);
-				g.drawString(camera.toString(), 10, curLine += LINE_HEIGHT);
-				g.drawString(
-						"Velocity: " + MathHelper.round(camera.getSpeed()), 10,
-						curLine += LINE_HEIGHT);
-				g.drawString((WIREFRAME) ? "Wireframe mode" : "Shading mode",
-						10, curLine += LINE_HEIGHT);
-				g.drawLine((screenWidth >> 1) - CROSSHAIR_SIZE,
-						screenHeight >> 1, (screenWidth >> 1) + CROSSHAIR_SIZE,
-						screenHeight >> 1);
-				g.drawLine(screenWidth >> 1, (screenHeight >> 1)
-						+ CROSSHAIR_SIZE, screenWidth >> 1, (screenHeight >> 1)
-						- CROSSHAIR_SIZE);
-				lastTime = System.currentTimeMillis();
-			} catch (InterruptedException e) {
-				System.out.println("How dare you interrupt me!");
-				e.printStackTrace();
-			}
-		}
+		drawingGraphics = g;
+		int curLine = 0;
+		//System.out.println(dt);
+		render(dt / 1000.0);
+		dt = (System.currentTimeMillis() - lastTime);
+		FPS = 1000.0 / dt;
+		FPS = FPS * 0.5 + lastFPS * 0.5;
+		lastFPS = FPS;
+		g.setColor(inverseColor(getBackground()));
+		g.drawString("FPS:\t" + MathHelper.round(FPS), 10,
+				curLine += LINE_HEIGHT);
+		g.drawString(camera.toString(), 10, curLine += LINE_HEIGHT);
+		g.drawString("Velocity: " + MathHelper.round(camera.getSpeed()), 10,
+				curLine += LINE_HEIGHT);
+		g.drawString((WIREFRAME) ? "Wireframe mode" : "Shading mode", 10,
+				curLine += LINE_HEIGHT);
+		g.drawLine((screenWidth >> 1) - CROSSHAIR_SIZE, screenHeight >> 1,
+				(screenWidth >> 1) + CROSSHAIR_SIZE, screenHeight >> 1);
+		g.drawLine(screenWidth >> 1, (screenHeight >> 1) + CROSSHAIR_SIZE,
+				screenWidth >> 1, (screenHeight >> 1) - CROSSHAIR_SIZE);
+		lastTime = System.currentTimeMillis();
 	}
 
 	public Color inverseColor(Color c) {
@@ -1128,8 +1049,8 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	 */
 	@Override
 	public void setBackground(Color bg) {
-		if (g2d != null)
-			g2d.setColor(bg);
+		if (drawingGraphics != null)
+			drawingGraphics.setColor(bg);
 		super.setBackground(bg);
 	}
 
@@ -1155,36 +1076,12 @@ public class Window3D extends JPanel implements ComponentListener, KeyListener,
 	 */
 	@Override
 	public void componentResized(ComponentEvent e) {
-		synchronized (renderlock) {
-			try {
-				renderlock.wait(10);
-				if (this.calcThread != null && this.calcThread.isAlive())
-					this.calcThread.interrupt();
-			} catch (InterruptedException e1) {
-				if (DEBUG) {
-					System.out.println("Resizing interrupted by "
-							+ e1.getLocalizedMessage());
-				}
-			}
-			screenWidth = getWidth();
-			screenHeight = getHeight();
-			zbuffer = new double[screenWidth][screenHeight];
-			if (g2d != null)
-				g2d.dispose();
-			if (mbf != null)
-				mbf.flush();
-			// create a compatible image and graphics component
-			GraphicsEnvironment env = GraphicsEnvironment
-					.getLocalGraphicsEnvironment();
-			GraphicsDevice device = env.getDefaultScreenDevice();
-			GraphicsConfiguration config = device.getDefaultConfiguration();
-			mbf = config.createCompatibleImage(screenWidth, screenWidth);
-			g2d = mbf.createGraphics();
-			camera.setAspect((double) screenWidth / screenHeight);
-			renderlock.notifyAll();
-			// free up any old resources
-			System.gc();
-		}
+		screenWidth = getWidth();
+		screenHeight = getHeight();
+		zbuffer = new double[screenWidth][screenHeight];
+		camera.setAspect((double) screenWidth / screenHeight);
+		// free up any old resources
+		System.gc();
 	}
 
 	/**

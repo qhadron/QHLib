@@ -36,6 +36,8 @@ public abstract class Object3D {
 	 */
 	private Vector scale;
 	
+	private boolean movable;
+	
 	private boolean modelChanged;
 	private Matrix modelMatrix;
 	
@@ -58,6 +60,7 @@ public abstract class Object3D {
 		velocity = new Vector();
 		scale = new Vector(1,1,1);
 		modelChanged = true;
+		movable = false;
 		this.getModelMatrix();
 	}
 	
@@ -82,48 +85,116 @@ public abstract class Object3D {
 		velocity = new Vector();
 		scale = new Vector(1,1,1);
 		modelChanged = true;
+		movable = false;
 		this.getModelMatrix();
 	}
 		
+	/**
+	 * Set the position
+	 * @param x x coordinate
+	 * @param y y coordinate
+	 * @param z z coordinate
+	 */
 	public void setPosition(double x, double y, double z) {
 		position.set(x, y, z);
 		modelChanged = true;
 	}
 
+	/**
+	 * Set the rotation
+	 * @param x x rotation
+	 * @param y y rotation
+	 * @param z z rotation
+	 */
 	public void setRotation(double x, double y, double z) {
 		rotation.set(x, y, z);
 		modelChanged = true;
 	}
 	
+	/**
+	 * Set the velocity
+	 * @param x x velocity
+	 * @param y y velocity
+	 * @param z z velocity
+	 */
 	public void setVelocity(double x, double y, double z) {
 		velocity.set(x,y,z);
 		modelChanged = true;
 	}
 	
+	/**
+	 * Set the scale
+	 * @param x scaling in x direction
+	 * @param y scaling in y direction
+	 * @param z scaling in z direction
+	 */
 	public void setScale(double x, double y, double z) {
 		scale.set(x, y, z);
 		modelChanged = true;
 	}
 	
 	
+	/**
+	 * Set the position
+	 * @param val the new value
+	 */
 	public void setPosition(Vector val) {
 		position.set(val);
 		modelChanged = true;
 	}
 	
+	/**
+	 * Set the velocity
+	 * @param val the new value
+	 */
+	public void setVelocity(Vector val) {
+		velocity.set(val);
+		modelChanged = true;
+	}
+	
+	/**
+	 * Set the Rotation
+	 * @param val the new value
+	 */
 	public void setRotation(Vector val) {
 		rotation.set(val);
 		modelChanged = true;
 	}
 	
+	/**
+	 * Set the Scale
+	 * @param val the new value
+	 */
 	public void setScale(Vector val) {
 		scale.set(val);
 		modelChanged = true;
 	}
 	
+	/**
+	 * @return the position
+	 */
+	public Vector getPosition() {
+		return position;
+	}
+
+	/**
+	 * @return the rotation
+	 */
+	public Vector getRotation() {
+		return rotation;
+	}
+
+	/**
+	 * @return the scale
+	 */
+	public Vector getScale() {
+		return scale;
+	}
+
 	public void setVeloctiy(Vector val) {
 		velocity.set(val);
 		modelChanged = true;
+		movable = true;
 	}
 	/**
 	 * Updates the object whenever it is drawn. Moves the object by its {@link #velocity} by default.
@@ -157,15 +228,37 @@ public abstract class Object3D {
 		return new Matrix(modelMatrix);
 	}
 	
+	/**
+	 * Calculate the normals for all the faces (Only needed once)
+	 */
 	public void calculateNormals() {
 		for (int i =0; i < triangles.length; ++i) {
 			triangles[i].calcNormal(vertices[triangles[i].A], vertices[triangles[i].B], vertices[triangles[i].C]);
 		}
 	}
 	
+	/**
+	 * Calculate the centers of all the faces (Only needed once)
+	 */
 	public void calculateCenters() {
 		for (int i =0; i < triangles.length; ++i) {
 			triangles[i].calcCenter(vertices[triangles[i].A], vertices[triangles[i].B], vertices[triangles[i].C]);
 		}
 	}
+
+	/**
+	 * @return the movable
+	 */
+	public boolean isMovable() {
+		return movable;
+	}
+
+	/**
+	 * @param movable the movable to set
+	 */
+	public void setMovable(boolean movable) {
+		this.movable = movable;
+	}
+	
+	
 }
