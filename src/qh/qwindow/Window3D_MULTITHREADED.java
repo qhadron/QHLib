@@ -922,7 +922,6 @@ public class Window3D_MULTITHREADED extends JPanel implements ComponentListener,
 			p1 = temp;
 		}
 
-		// TODO implement lighting
 		/*
 		 * Vector brightness =
 		 * MathHelper.calcBrightness(center,normal,camera.getLightReference());
@@ -1229,7 +1228,6 @@ public class Window3D_MULTITHREADED extends JPanel implements ComponentListener,
 
 	@Override
 	public void mouseExited(MouseEvent e) {
-		// TODO Auto-generated method stub
 
 	}
 

@@ -1140,7 +1140,6 @@ public class Window3D_UNITHREAD extends JPanel implements ComponentListener, Key
 
 	@Override
 	public void mouseExited(MouseEvent e) {
-		// TODO Auto-generated method stub
 
 	}
 
