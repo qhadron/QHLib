@@ -325,19 +325,4 @@ public class Parser3D {
 			return -1;
 		return Double.parseDouble(str.substring(startpos, endpos));
 	}
-
-	public static void main(String[] args) {
-		try {
-			LinkedList<Object3D> susanne = Parser3D
-					.getMesh("C:\\Users\\jackl_000\\Desktop\\cube.babylon");
-			for (Iterator<Object3D> it = susanne.iterator(); it.hasNext();) {
-				Object3D cur = it.next();
-				System.out.println("Loaded: " + cur + "\n");
-			}
-		} catch (Exception e) {
-			System.err.println(e.getMessage());
-			e.printStackTrace();
-		}
-	}
-
 }
